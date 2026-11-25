@@ -1,0 +1,64 @@
+services:
+  - type: web
+    name: n8n
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon  # cámbialo: frankfurt, singapore, ohio, virginia
+    healthCheckPath: /healthz
+    envVars:
+      # Auth básica (cámbiala en Render Dashboard después)
+      - key: N8N_BASIC_AUTH_ACTIVE
+        value: "true"
+      - key: N8N_BASIC_AUTH_USER
+        value: admin
+      - key: N8N_BASIC_AUTH_PASSWORD
+        generateValue: true
+
+      # Config core
+      - key: N8N_HOST
+        fromService:
+          name: n8n
+          type: web
+          property: host
+      - key: N8N_PORT
+        value: "5678"
+      - key: N8N_PROTOCOL
+        value: https
+      - key: WEBHOOK_URL
+        fromService:
+          name: n8n
+          type: web
+          property: host
+      - key: NODE_ENV
+        value: production
+      - key: GENERIC_TIMEZONE
+        value: America/Costa_Rica  # tu zona horaria
+
+      # Supabase Postgres (rellena estos valores en Render Dashboard)
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_HOST
+        value: "aws-0-us-east-1.pooler.supabase.com"  # TU HOST POOLER
+      - key: DB_POSTGRESDB_PORT
+        value: "5432"
+      - key: DB_POSTGRESDB_DATABASE
+        value: "postgres"
+      - key: DB_POSTGRESDB_USER
+        value: "postgres.xxxxxxxxxxxxxxxx"  # TU PROJECT REF
+      - key: DB_POSTGRESDB_PASSWORD
+        sync: false  # NO lo pongas aquí, agrégalo manual en Dashboard
+
+      # SSL obligatorio en Supabase
+      - key: DB_POSTGRESDB_SSL_CA
+        value: ""  # n8n usa SSL por defecto con require
+      - key: DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED
+        value: "true"
+
+      # Performance para free tier (512MB RAM)
+      - key: EXECUTIONS_MODE
+        value: regular  # o 'queue' si añades Redis después
+      - key: N8N_PAYLOAD_SIZE_MAX
+        value: "16"  # MB, evita OOM
+
+# NO pongas 'databases:' — usamos Supabase externo
